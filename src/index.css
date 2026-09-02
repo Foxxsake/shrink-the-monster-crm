@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg: #0A0A0A;
+    --accent: #FF5722;
+    --monster: #00FF9D;
+    --white: #FFFFFF;
+    --gray: #18181B;
+    --card-bg: #141417;
+    --card-border: #27272A;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg);
+    color: #F4F4F5;
+  }
+
+  h1, h2, h3, .font-heading {
+    font-family: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Custom scrollbar for dark high-contrast theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0A0A;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3F3F46;
+}
+
+.font-mono-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom accent gradient & glow effects */
+.monster-glow {
+  box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
+}
+
+.accent-glow {
+  box-shadow: 0 0 20px rgba(255, 87, 34, 0.25);
+}
+
+.bold-card {
+  background-color: #141417;
+  border: 1px solid #27272A;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.bold-card:hover {
+  border-color: #3F3F46;
+}
