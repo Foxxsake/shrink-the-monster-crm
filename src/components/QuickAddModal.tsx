@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Users, Briefcase, CheckSquare, FileText, Clock, Receipt, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Users, Plus, AlertCircle, ArrowRight } from 'lucide-react';
 import { Customer, FollowUp, Job, ModuleId, Note, Payment, Task, WorkspaceConfig } from '../types';
 
 interface QuickAddModalProps {
@@ -29,10 +29,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   onAddFollowUp,
   onAddPayment,
 }) => {
-  if (!isOpen) return null;
-
   const enabledModules = config.modules.filter((m) => m.enabled);
-  const [activeType, setActiveType] = useState<ModuleId>(enabledModules[0]?.id || 'customers');
+
+  const [activeType, setActiveType] = useState<ModuleId>(
+    enabledModules[0]?.id || 'customers'
+  );
 
   // Form States
   // Customer Form
@@ -67,6 +68,68 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const [payStatus, setPayStatus] = useState<'paid' | 'pending' | 'overdue'>('pending');
   const [payDueDate, setPayDueDate] = useState(new Date().toISOString().split('T')[0]);
 
+  // Ensure activeType is always an enabled module
+  useEffect(() => {
+    if (!enabledModules.some((m) => m.id === activeType)) {
+      if (enabledModules.length > 0) {
+        setActiveType(enabledModules[0].id);
+      }
+    }
+  }, [config.modules, activeType, enabledModules]);
+
+  // Sync selected customer IDs when customer list updates or modal opens
+  useEffect(() => {
+    const firstCustId = customers[0]?.id || '';
+    if (!customers.some((c) => c.id === jobCustId)) setJobCustId(firstCustId);
+    if (!customers.some((c) => c.id === noteCustId)) setNoteCustId(firstCustId);
+    if (!customers.some((c) => c.id === folCustId)) setFolCustId(firstCustId);
+    if (!customers.some((c) => c.id === payCustId)) setPayCustId(firstCustId);
+  }, [customers, jobCustId, noteCustId, folCustId, payCustId]);
+
+  // Reset form fields whenever the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setCustName('');
+      setCustEmail('');
+      setCustPhone('');
+      setCustCompany('');
+
+      setJobTitle('');
+      setJobAmount('150');
+      setJobDate(new Date().toISOString().split('T')[0]);
+
+      setTaskTitle('');
+      setTaskPriority('medium');
+
+      setNoteTitle('');
+      setNoteContent('');
+
+      setFolTitle('');
+      setFolDate(new Date().toISOString().split('T')[0]);
+
+      setPayAmount('150');
+      setPayStatus('pending');
+      setPayDueDate(new Date().toISOString().split('T')[0]);
+
+      const firstCustId = customers[0]?.id || '';
+      setJobCustId(firstCustId);
+      setNoteCustId(firstCustId);
+      setFolCustId(firstCustId);
+      setPayCustId(firstCustId);
+
+      if (!enabledModules.some((m) => m.id === activeType) && enabledModules[0]) {
+        setActiveType(enabledModules[0].id);
+      }
+    }
+  }, [isOpen]);
+
+  // If modal is not open, all hooks have executed; return null now safely
+  if (!isOpen) return null;
+
+  const requiresCustomer =
+    activeType === 'jobs' || activeType === 'followups' || activeType === 'payments';
+  const hasNoCustomers = customers.length === 0;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -75,8 +138,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       onAddCustomer({
         id: `cust-${Date.now()}`,
         name: custName.trim(),
-        email: custEmail.trim() || 'info@client.co.uk',
-        phone: custPhone.trim() || '07700 900000',
+        email: custEmail.trim(), // Stores empty string if blank
+        phone: custPhone.trim(), // Stores empty string if blank
         company: custCompany.trim(),
         status: 'active',
         createdAt: new Date().toISOString().split('T')[0],
@@ -177,289 +240,341 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
 
         {/* Form Content */}
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          {activeType === 'customers' && (
+          {/* Validation Notice when no customers exist for dependent items */}
+          {requiresCustomer && hasNoCustomers ? (
+            <div className="bg-[#FF5722]/10 border border-[#FF5722]/40 rounded-xl p-4 text-center space-y-3">
+              <AlertCircle className="w-8 h-8 text-[#FF5722] mx-auto" />
+              <div>
+                <h4 className="font-black text-white text-sm font-heading mb-1">
+                  Client Required
+                </h4>
+                <p className="text-xs text-neutral-300 leading-relaxed font-medium">
+                  Please add at least one client before creating a job, follow-up, or payment.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveType('customers')}
+                className="inline-flex items-center gap-1.5 bg-[#FF5722] hover:brightness-110 text-white font-black text-xs uppercase tracking-wider px-4 py-2 rounded-xl transition shadow-md"
+              >
+                <Users className="w-4 h-4" />
+                <span>Add a Client First</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
             <>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
-                  Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={custName}
-                  onChange={(e) => setCustName(e.target.value)}
-                  placeholder="e.g. Sarah Jenkins"
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Phone</label>
-                  <input
-                    type="text"
-                    value={custPhone}
-                    onChange={(e) => setCustPhone(e.target.value)}
-                    placeholder="07700 900123"
-                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Email</label>
-                  <input
-                    type="email"
-                    value={custEmail}
-                    onChange={(e) => setCustEmail(e.target.value)}
-                    placeholder="sarah@example.co.uk"
-                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
-                  Company / Property (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={custCompany}
-                  onChange={(e) => setCustCompany(e.target.value)}
-                  placeholder="e.g. The Oakwood Bistro"
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                />
-              </div>
-            </>
-          )}
+              {activeType === 'customers' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={custName}
+                      onChange={(e) => setCustName(e.target.value)}
+                      placeholder="e.g. Sarah Jenkins"
+                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                        Phone (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={custPhone}
+                        onChange={(e) => setCustPhone(e.target.value)}
+                        placeholder="07700 900123"
+                        className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                        Email (Optional)
+                      </label>
+                      <input
+                        type="email"
+                        value={custEmail}
+                        onChange={(e) => setCustEmail(e.target.value)}
+                        placeholder="sarah@example.co.uk"
+                        className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Company / Property (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={custCompany}
+                      onChange={(e) => setCustCompany(e.target.value)}
+                      placeholder="e.g. The Oakwood Bistro"
+                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                    />
+                  </div>
+                </>
+              )}
 
-          {activeType === 'jobs' && (
-            <>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
-                  Job Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
-                  placeholder="e.g. Weekly Commercial Clean"
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Client *</label>
-                  <select
-                    value={jobCustId}
-                    onChange={(e) => setJobCustId(e.target.value)}
-                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                  >
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Amount (£)</label>
-                  <input
-                    type="number"
-                    value={jobAmount}
-                    onChange={(e) => setJobAmount(e.target.value)}
-                    placeholder="150"
-                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Date scheduled</label>
-                <input
-                  type="date"
-                  value={jobDate}
-                  onChange={(e) => setJobDate(e.target.value)}
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                />
-              </div>
-            </>
-          )}
+              {activeType === 'jobs' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Job Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={jobTitle}
+                      onChange={(e) => setJobTitle(e.target.value)}
+                      placeholder="e.g. Weekly Commercial Clean"
+                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                        Client *
+                      </label>
+                      <select
+                        value={jobCustId}
+                        onChange={(e) => setJobCustId(e.target.value)}
+                        className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                      >
+                        {customers.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                        Amount (£)
+                      </label>
+                      <input
+                        type="number"
+                        value={jobAmount}
+                        onChange={(e) => setJobAmount(e.target.value)}
+                        placeholder="150"
+                        className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Date scheduled
+                    </label>
+                    <input
+                      type="date"
+                      value={jobDate}
+                      onChange={(e) => setJobDate(e.target.value)}
+                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                    />
+                  </div>
+                </>
+              )}
 
-          {activeType === 'tasks' && (
-            <>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
-                  Task Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={taskTitle}
-                  onChange={(e) => setTaskTitle(e.target.value)}
-                  placeholder="e.g. Order extra microfiber cloths"
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Priority</label>
-                <div className="flex gap-2">
-                  {(['low', 'medium', 'high'] as const).map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setTaskPriority(p)}
-                      className={`flex-1 py-2 text-xs font-black rounded-lg uppercase tracking-wider transition ${
-                        taskPriority === p
-                          ? p === 'high'
-                            ? 'bg-rose-600 text-white'
-                            : p === 'medium'
-                            ? 'bg-amber-500 text-white'
-                            : 'bg-[#00FF9D] text-black'
-                          : 'bg-neutral-900 text-neutral-400 hover:bg-neutral-800'
-                      }`}
+              {activeType === 'tasks' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Task Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={taskTitle}
+                      onChange={(e) => setTaskTitle(e.target.value)}
+                      placeholder="e.g. Order extra microfiber cloths"
+                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Priority
+                    </label>
+                    <div className="flex gap-2">
+                      {(['low', 'medium', 'high'] as const).map((p) => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setTaskPriority(p)}
+                          className={`flex-1 py-2 text-xs font-black rounded-lg uppercase tracking-wider transition ${
+                            taskPriority === p
+                              ? p === 'high'
+                                ? 'bg-rose-600 text-white'
+                                : p === 'medium'
+                                ? 'bg-amber-500 text-white'
+                                : 'bg-[#00FF9D] text-black'
+                              : 'bg-neutral-900 text-neutral-400 hover:bg-neutral-800'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {activeType === 'notes' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Note Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={noteTitle}
+                      onChange={(e) => setNoteTitle(e.target.value)}
+                      placeholder="e.g. Access & Alarm Code"
+                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Client Link (Optional)
+                    </label>
+                    <select
+                      value={noteCustId}
+                      onChange={(e) => setNoteCustId(e.target.value)}
+                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
                     >
-                      {p}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+                      <option value="">-- General Note --</option>
+                      {customers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Note Content
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={noteContent}
+                      onChange={(e) => setNoteContent(e.target.value)}
+                      placeholder="Write site notes, gate instructions, or preferences..."
+                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                    />
+                  </div>
+                </>
+              )}
 
-          {activeType === 'notes' && (
-            <>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
-                  Note Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={noteTitle}
-                  onChange={(e) => setNoteTitle(e.target.value)}
-                  placeholder="e.g. Access & Alarm Code"
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
-                  Client Link (Optional)
-                </label>
-                <select
-                  value={noteCustId}
-                  onChange={(e) => setNoteCustId(e.target.value)}
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                >
-                  <option value="">-- General Note --</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Note Content</label>
-                <textarea
-                  rows={3}
-                  value={noteContent}
-                  onChange={(e) => setNoteContent(e.target.value)}
-                  placeholder="Write site notes, gate instructions, or preferences..."
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                />
-              </div>
-            </>
-          )}
+              {activeType === 'followups' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Follow-up Action *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={folTitle}
+                      onChange={(e) => setFolTitle(e.target.value)}
+                      placeholder="e.g. Call to confirm monthly re-booking"
+                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                        Client *
+                      </label>
+                      <select
+                        value={folCustId}
+                        onChange={(e) => setFolCustId(e.target.value)}
+                        className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                      >
+                        {customers.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                        Due Date
+                      </label>
+                      <input
+                        type="date"
+                        value={folDate}
+                        onChange={(e) => setFolDate(e.target.value)}
+                        className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
 
-          {activeType === 'followups' && (
-            <>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
-                  Follow-up Action *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={folTitle}
-                  onChange={(e) => setFolTitle(e.target.value)}
-                  placeholder="e.g. Call to confirm monthly re-booking"
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Client *</label>
-                  <select
-                    value={folCustId}
-                    onChange={(e) => setFolCustId(e.target.value)}
-                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                  >
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Due Date</label>
-                  <input
-                    type="date"
-                    value={folDate}
-                    onChange={(e) => setFolDate(e.target.value)}
-                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeType === 'payments' && (
-            <>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Client *</label>
-                <select
-                  value={payCustId}
-                  onChange={(e) => setPayCustId(e.target.value)}
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                >
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Amount (£) *</label>
-                  <input
-                    type="number"
-                    required
-                    value={payAmount}
-                    onChange={(e) => setPayAmount(e.target.value)}
-                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Status</label>
-                  <select
-                    value={payStatus}
-                    onChange={(e) => setPayStatus(e.target.value as any)}
-                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="paid">Paid</option>
-                    <option value="overdue">Overdue</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Due Date</label>
-                <input
-                  type="date"
-                  value={payDueDate}
-                  onChange={(e) => setPayDueDate(e.target.value)}
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                />
-              </div>
+              {activeType === 'payments' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Client *
+                    </label>
+                    <select
+                      value={payCustId}
+                      onChange={(e) => setPayCustId(e.target.value)}
+                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                    >
+                      {customers.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                        Amount (£) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        value={payAmount}
+                        onChange={(e) => setPayAmount(e.target.value)}
+                        className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                        Status
+                      </label>
+                      <select
+                        value={payStatus}
+                        onChange={(e) => setPayStatus(e.target.value as any)}
+                        className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                        <option value="overdue">Overdue</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                      Due Date
+                    </label>
+                    <input
+                      type="date"
+                      value={payDueDate}
+                      onChange={(e) => setPayDueDate(e.target.value)}
+                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                    />
+                  </div>
+                </>
+              )}
             </>
           )}
 
@@ -474,7 +589,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 text-xs font-black uppercase tracking-wider text-white bg-[#FF5722] hover:brightness-110 rounded-xl transition shadow-md shadow-[#FF5722]/20"
+              disabled={requiresCustomer && hasNoCustomers}
+              className="flex-1 py-2.5 text-xs font-black uppercase tracking-wider text-white bg-[#FF5722] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition shadow-md shadow-[#FF5722]/20"
             >
               Save Item
             </button>
@@ -484,3 +600,4 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     </div>
   );
 };
+

@@ -2,5 +2,5 @@
   "name": "Shrink the Monster",
   "description": "Mobile-first modular workspace for small service businesses that simplifies bloated CRMs into only the essential tools needed.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

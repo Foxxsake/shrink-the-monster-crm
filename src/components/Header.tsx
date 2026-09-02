@@ -18,7 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   onOpenQuickAdd,
 }) => {
-  const { isInstallable, isIOS, install } = usePWAInstall();
+  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
   const isOnline = useOnlineStatus();
   const [showIOSPrompt, setShowIOSPrompt] = useState(false);
 
@@ -56,42 +56,44 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right Action Controls */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Quick Add Button */}
           <button
             onClick={onOpenQuickAdd}
             style={{ backgroundColor: config.accentColor || '#FF5722' }}
-            className="flex items-center gap-1.5 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-md hover:brightness-110 active:scale-95 transition tracking-wide uppercase"
+            className="flex items-center gap-1.5 text-white font-bold text-xs sm:text-sm px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl shadow-md hover:brightness-110 active:scale-95 transition tracking-wide uppercase"
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span className="hidden xs:inline">Quick Add</span>
           </button>
 
-          {/* PWA Install Button */}
-          {isInstallable && (
+          {/* PWA Install Actions (hidden when running standalone) */}
+          {!isInstalled && isInstallable && (
             <button
               onClick={install}
-              className="hidden sm:flex items-center gap-1.5 text-neutral-200 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-xs font-bold px-3.5 py-2.5 rounded-xl transition"
+              className="flex items-center gap-1.5 text-neutral-200 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-xs font-bold px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition"
+              title="Install App to Home Screen"
             >
               <Download className="w-3.5 h-3.5 text-[#00FF9D]" />
-              <span>Install App</span>
+              <span className="hidden xs:inline">Install</span>
             </button>
           )}
 
-          {isIOS && !isInstallable && (
+          {!isInstalled && isIOS && !isInstallable && (
             <button
-              onClick={() => setShowIOSPrompt(false)}
-              className="hidden sm:flex items-center gap-1.5 text-neutral-200 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-xs font-bold px-3.5 py-2.5 rounded-xl transition"
+              onClick={() => setShowIOSPrompt(true)}
+              className="flex items-center gap-1.5 text-neutral-200 bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-xs font-bold px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl transition"
+              title="Install on iPhone / iPad"
             >
               <Download className="w-3.5 h-3.5 text-[#00FF9D]" />
-              <span>Install iOS</span>
+              <span className="hidden xs:inline">Install iOS</span>
             </button>
           )}
 
           {/* Settings Button */}
           <button
             onClick={() => setActiveTab('settings')}
-            className={`p-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800 border transition ${
+            className={`p-2 sm:p-2.5 rounded-xl text-neutral-400 hover:text-white hover:bg-neutral-800 border transition ${
               activeTab === 'settings' ? 'bg-neutral-800 text-[#FF5722] border-[#FF5722]/50' : 'border-transparent'
             }`}
             title="Workspace Settings"
