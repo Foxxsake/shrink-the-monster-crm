@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Users, Plus, AlertCircle, ArrowRight } from 'lucide-react';
 import { Customer, FollowUp, Job, ModuleId, Note, Payment, Task, WorkspaceConfig } from '../types';
+import { generateInvoiceNumber } from '../utils/invoice';
 
 interface QuickAddModalProps {
   isOpen: boolean;
@@ -29,7 +30,10 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   onAddFollowUp,
   onAddPayment,
 }) => {
-  const enabledModules = config.modules.filter((m) => m.enabled);
+  const enabledModules = useMemo(
+    () => config.modules.filter((m) => m.enabled),
+    [config.modules]
+  );
 
   const [activeType, setActiveType] = useState<ModuleId>(
     enabledModules[0]?.id || 'customers'
@@ -68,22 +72,20 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const [payStatus, setPayStatus] = useState<'paid' | 'pending' | 'overdue'>('pending');
   const [payDueDate, setPayDueDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Ensure activeType is always an enabled module
+  // Ensure activeType is always an enabled module if config changes
   useEffect(() => {
-    if (!enabledModules.some((m) => m.id === activeType)) {
-      if (enabledModules.length > 0) {
-        setActiveType(enabledModules[0].id);
-      }
+    if (enabledModules.length > 0 && !enabledModules.some((m) => m.id === activeType)) {
+      setActiveType(enabledModules[0].id);
     }
-  }, [config.modules, activeType, enabledModules]);
+  }, [enabledModules, activeType]);
 
-  // Sync selected customer IDs when customer list updates or modal opens
+  // Sync selected customer IDs when customer list updates
   useEffect(() => {
     const firstCustId = customers[0]?.id || '';
-    if (!customers.some((c) => c.id === jobCustId)) setJobCustId(firstCustId);
-    if (!customers.some((c) => c.id === noteCustId)) setNoteCustId(firstCustId);
-    if (!customers.some((c) => c.id === folCustId)) setFolCustId(firstCustId);
-    if (!customers.some((c) => c.id === payCustId)) setPayCustId(firstCustId);
+    if (jobCustId && !customers.some((c) => c.id === jobCustId)) setJobCustId(firstCustId);
+    if (noteCustId && !customers.some((c) => c.id === noteCustId)) setNoteCustId(firstCustId);
+    if (folCustId && !customers.some((c) => c.id === folCustId)) setFolCustId(firstCustId);
+    if (payCustId && !customers.some((c) => c.id === payCustId)) setPayCustId(firstCustId);
   }, [customers, jobCustId, noteCustId, folCustId, payCustId]);
 
   // Reset form fields whenever the modal opens
@@ -121,7 +123,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
         setActiveType(enabledModules[0].id);
       }
     }
-  }, [isOpen]);
+  }, [isOpen, customers, enabledModules, activeType]);
 
   // If modal is not open, all hooks have executed; return null now safely
   if (!isOpen) return null;
@@ -191,7 +193,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
         amount: parseFloat(payAmount) || 0,
         status: payStatus,
         dueDate: payDueDate,
-        invoiceNumber: `INV-2026-${Math.floor(100 + Math.random() * 900)}`,
+        invoiceNumber: generateInvoiceNumber(),
       });
     }
 

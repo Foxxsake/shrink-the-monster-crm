@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Customer, FollowUp, Job, ModuleId, Payment, Task, ViewTab, WorkspaceConfig } from '../../types';
+import { calculateDashboardMetrics } from '../../utils/metrics';
 
 interface DashboardViewProps {
   config: WorkspaceConfig;
@@ -49,12 +50,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   // Metrics calculations
-  const activeCustomers = customers.filter((c) => c.status === 'active').length;
+  const metrics = calculateDashboardMetrics(customers, jobs, tasks, followUps, payments);
+  const activeCustomers = metrics.activeCustomersCount;
   const pendingJobs = jobs.filter((j) => j.status === 'scheduled' || j.status === 'in_progress');
-  const pendingTasks = tasks.filter((t) => !t.completed);
   const pendingFollowUps = followUps.filter((f) => !f.completed);
   const unpaidPayments = payments.filter((p) => p.status === 'pending' || p.status === 'overdue');
-  const totalOutstanding = unpaidPayments.reduce((acc, p) => acc + p.amount, 0);
+  const totalOutstanding = metrics.totalOutstandingAmount;
 
   return (
     <div className="space-y-6 animate-fadeIn pb-12">

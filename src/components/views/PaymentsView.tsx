@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Receipt, Search, Plus, DollarSign, Calendar, User, Edit2, Trash2, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Customer, Payment, WorkspaceConfig } from '../../types';
 import { DeleteConfirmModal } from '../DeleteConfirmModal';
+import { generateInvoiceNumber } from '../../utils/invoice';
 
 interface PaymentsViewProps {
   config: WorkspaceConfig;
@@ -34,7 +35,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
     amount: '150',
     status: 'pending' as Payment['status'],
     dueDate: new Date().toISOString().split('T')[0],
-    invoiceNumber: `INV-2026-${Math.floor(100 + Math.random() * 900)}`,
+    invoiceNumber: generateInvoiceNumber(),
   });
 
   const totalPaid = payments.filter((p) => p.status === 'paid').reduce((a, b) => a + b.amount, 0);
@@ -59,7 +60,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
       amount: '150',
       status: 'pending',
       dueDate: new Date().toISOString().split('T')[0],
-      invoiceNumber: `INV-2026-${Math.floor(100 + Math.random() * 900)}`,
+      invoiceNumber: generateInvoiceNumber(),
     });
     setIsModalOpen(true);
   };

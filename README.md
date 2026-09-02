@@ -49,25 +49,32 @@ npm install
 npm run dev
 ```
 
-### Type Checking & Production Build Verification
+### Type Checking, Testing & Production Build Verification
 
 ```bash
-# Run TypeScript compilation and Vite build sequentially
+# Run TypeScript compilation, Vitest tests, and Vite build sequentially
 npm run check
 ```
 
-### Production Build Output
+### Running Tests
 
 ```bash
-# Generate production bundle in dist/
-npm run build
+# Run automated Vitest suite once
+npm run test
+
+# Run tests in watch mode during development
+npm run test:watch
 ```
 
-The compiled static assets will be located in the `dist/` directory, ready to be served by any static web server (such as Cloud Run, Vercel, Netlify, or Nginx).
+### Static-Host Deployment
+
+* **Build Command**: `npm run build`
+* **Output Directory**: `dist`
+* **SPA Fallback & Caching**: Pre-configured via `public/_redirects` and `public/_headers` for static hosting platforms (such as Cloudflare Pages, Netlify, Vercel, or Nginx).
 
 ---
 
-## 📲 PWA Installation Guides
+## 📲 PWA Installation & Physical Testing Notice
 
 ### Installing on Android (Chrome or Edge)
 1. Open the app URL in Google Chrome or Microsoft Edge.
@@ -81,13 +88,16 @@ The compiled static assets will be located in the `dist/` directory, ready to be
 3. Scroll down the menu and tap **Add to Home Screen**.
 4. Tap **Add** in the top right corner. The app will open in fullscreen standalone mode from your home screen.
 
+> ⚠️ **Deployment Notice**: The app has been validated in desktop and mobile preview environments. Final PWA installability and offline caching on a physical phone will be validated following static-host deployment.
+
 ---
 
-## 🔒 Storage & Limitations
+## 🔒 Storage & Scope Limitations
 
-* **Data Storage**: All data (clients, jobs, tasks, notes, payments, settings) is currently stored locally in your web browser's `localStorage`.
-* **Database & Authentication**: Supabase, cloud SQL, multi-user login, and backend sync are **not** implemented in this release pass.
-* **Browser Data Clearing**: Clearing your browser cache or site data will clear local records unless exported or backed up.
+* **Local Storage Only**: Data currently lives only in browser local storage (`localStorage`).
+* **Clearing Site Data**: Clearing browser cache or site data removes all stored records.
+* **Backend & Authentication**: Supabase, Cloud SQL, multi-user accounts, and backend server syncing are **not** implemented.
+* **No Secret Keys**: No Gemini or API keys are required or exposed.
 
 ---
 
