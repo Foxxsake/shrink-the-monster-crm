@@ -9,13 +9,13 @@ describe('generateInvoiceNumber', () => {
   });
 
   it('uses the year from the passed date parameter', () => {
-    const customDate = new Date('2028-05-15');
+    const customDate = new Date(2028, 4, 15);
     const inv = generateInvoiceNumber({ date: customDate, seed: 45 });
     expect(inv).toBe('INV-2028-0045');
   });
 
   it('pads seed numbers to 4 digits', () => {
-    const inv = generateInvoiceNumber({ date: new Date('2026-01-01'), seed: 7 });
+    const inv = generateInvoiceNumber({ date: new Date(2026, 0, 1), seed: 7 });
     expect(inv).toBe('INV-2026-0007');
   });
 

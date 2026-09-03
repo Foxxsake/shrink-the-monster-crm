@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, expect, it, beforeEach } from 'vitest';
 import App from './App';
+import { INITIAL_CUSTOMERS, INITIAL_JOBS, INITIAL_TASKS, INITIAL_NOTES, INITIAL_FOLLOWUPS, INITIAL_PAYMENTS } from './data';
 
 describe('App Integration', () => {
   beforeEach(() => {
@@ -51,6 +52,11 @@ describe('App Integration', () => {
       expect(screen.queryByText('Reset Entire Workspace?')).not.toBeInTheDocument();
     });
     
+    // Cancelling preserves data
+    const customersJson = window.localStorage.getItem('shrink_customers');
+    expect(customersJson).not.toBe('[]');
+    expect(JSON.parse(customersJson!)).toHaveLength(INITIAL_CUSTOMERS.length);
+    
     // Confirm Reset
     fireEvent.click(screen.getByText('Reset All Workspace Data'));
     const confirmBtn = await screen.findByText('Reset Data');
@@ -59,10 +65,34 @@ describe('App Integration', () => {
     // Should be back to landing
     expect(await screen.findByText('Shrink My Software')).toBeInTheDocument();
     
+    // Verify LocalStorage was cleared
+    await waitFor(() => {
+      expect(window.localStorage.getItem('shrink_customers')).toBe('[]');
+      expect(window.localStorage.getItem('shrink_jobs')).toBe('[]');
+      expect(window.localStorage.getItem('shrink_tasks')).toBe('[]');
+      expect(window.localStorage.getItem('shrink_notes')).toBe('[]');
+      expect(window.localStorage.getItem('shrink_followups')).toBe('[]');
+      expect(window.localStorage.getItem('shrink_payments')).toBe('[]');
+      
+      const configJson = window.localStorage.getItem('shrink_workspace_config');
+      expect(configJson).toBeTruthy();
+      expect(JSON.parse(configJson!).isConfigured).toBe(false);
+    });
+    
     // Relaunch demo
     fireEvent.click(screen.getByText('Instant Demo'));
     
     // Should be on dashboard with restored demo data
     expect(await screen.findByText('Dashboard')).toBeInTheDocument();
+    
+    // Verify restored demo records
+    await waitFor(() => {
+      expect(JSON.parse(window.localStorage.getItem('shrink_customers')!)).toHaveLength(INITIAL_CUSTOMERS.length);
+      expect(JSON.parse(window.localStorage.getItem('shrink_jobs')!)).toHaveLength(INITIAL_JOBS.length);
+      expect(JSON.parse(window.localStorage.getItem('shrink_tasks')!)).toHaveLength(INITIAL_TASKS.length);
+      expect(JSON.parse(window.localStorage.getItem('shrink_notes')!)).toHaveLength(INITIAL_NOTES.length);
+      expect(JSON.parse(window.localStorage.getItem('shrink_followups')!)).toHaveLength(INITIAL_FOLLOWUPS.length);
+      expect(JSON.parse(window.localStorage.getItem('shrink_payments')!)).toHaveLength(INITIAL_PAYMENTS.length);
+    });
   });
 });
