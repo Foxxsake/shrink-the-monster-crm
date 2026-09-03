@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Settings, RefreshCw, Trash2, Sparkles, Shield, CheckCircle2, Wifi, WifiOff } from 'lucide-react';
 import { ModuleId, WorkspaceConfig } from '../../types';
 import { useOnlineStatus } from '../../hooks/useOnlineStatus';
+import { DeleteConfirmModal } from '../DeleteConfirmModal';
 
 interface SettingsViewProps {
   config: WorkspaceConfig;
@@ -21,6 +22,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [accentColor, setAccentColor] = useState(config.accentColor || '#4f46e5');
   const [modules, setModules] = useState(config.modules);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const handleToggleModule = (id: ModuleId) => {
     setModules((prev) =>
@@ -190,11 +192,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <button
             type="button"
-            onClick={() => {
-              if (window.confirm('Reset workspace to default demo data?')) {
-                onResetWorkspace();
-              }
-            }}
+            onClick={() => setShowResetConfirm(true)}
             className="flex-1 py-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-black uppercase tracking-wider text-xs rounded-xl hover:bg-rose-500/20 transition flex items-center justify-center gap-1.5"
           >
             <Trash2 className="w-4 h-4" />
@@ -202,6 +200,18 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </button>
         </div>
       </div>
+
+      <DeleteConfirmModal
+        isOpen={showResetConfirm}
+        title="Reset Entire Workspace?"
+        message="This action will permanently delete all Customers, Jobs, Tasks, Notes, Follow-ups, Payments, and custom Settings. Everything will be completely wiped."
+        confirmLabel="Reset Data"
+        onConfirm={() => {
+          setShowResetConfirm(false);
+          onResetWorkspace();
+        }}
+        onCancel={() => setShowResetConfirm(false)}
+      />
     </div>
   );
 };

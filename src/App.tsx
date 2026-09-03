@@ -64,18 +64,26 @@ export default function App() {
 
   const handleLaunchDemo = () => {
     setConfig({ ...DEFAULT_WORKSPACE, isConfigured: true });
+    setCustomers(INITIAL_CUSTOMERS);
+    setJobs(INITIAL_JOBS);
+    setTasks(INITIAL_TASKS);
+    setNotes(INITIAL_NOTES);
+    setFollowUps(INITIAL_FOLLOWUPS);
+    setPayments(INITIAL_PAYMENTS);
     setAppMode('workspace');
     setActiveTab('dashboard');
   };
 
   const handleResetWorkspace = () => {
-    resetConfig();
-    resetCustomers();
-    resetJobs();
-    resetTasks();
-    resetNotes();
-    resetFollowUps();
-    resetPayments();
+    setConfig(DEFAULT_WORKSPACE);
+    setCustomers([]);
+    setJobs([]);
+    setTasks([]);
+    setNotes([]);
+    setFollowUps([]);
+    setPayments([]);
+    setIsQuickAddOpen(false);
+    setActiveTab('dashboard');
     setAppMode('landing');
   };
 

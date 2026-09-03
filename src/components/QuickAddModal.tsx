@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { X, Users, Plus, AlertCircle, ArrowRight } from 'lucide-react';
 import { Customer, FollowUp, Job, ModuleId, Note, Payment, Task, WorkspaceConfig } from '../types';
 import { generateInvoiceNumber } from '../utils/invoice';
+import { getEnabledModules, selectValidModule } from '../utils/config';
 
 interface QuickAddModalProps {
   isOpen: boolean;
@@ -31,12 +32,12 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   onAddPayment,
 }) => {
   const enabledModules = useMemo(
-    () => config.modules.filter((m) => m.enabled),
+    () => getEnabledModules(config.modules),
     [config.modules]
   );
 
   const [activeType, setActiveType] = useState<ModuleId>(
-    enabledModules[0]?.id || 'customers'
+    selectValidModule(enabledModules)
   );
 
   // Form States
@@ -76,10 +77,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
 
   // Ensure activeType is always an enabled module if config changes
   useEffect(() => {
-    if (enabledModules.length > 0 && !enabledModules.some((m) => m.id === activeType)) {
-      setActiveType(enabledModules[0].id);
-    }
-  }, [enabledModules, activeType]);
+    setActiveType((current) => selectValidModule(enabledModules, current));
+  }, [enabledModules]);
 
   // Sync selected customer IDs when customer list updates
   useEffect(() => {
@@ -90,9 +89,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     if (payCustId && !customers.some((c) => c.id === payCustId)) setPayCustId(firstCustId);
   }, [customers, jobCustId, noteCustId, folCustId, payCustId]);
 
-  // Reset form fields whenever the modal opens
+  const prevIsOpen = useRef(isOpen);
+
+  // Reset form fields whenever the modal opens from a closed state
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpen.current) {
       setCustName('');
       setCustEmail('');
       setCustPhone('');
@@ -123,9 +124,10 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       setFolCustId(firstCustId);
       setPayCustId(firstCustId);
 
-      // Do not use enabledModules as dependency here to prevent reset on every config change while open
+      setActiveType(selectValidModule(enabledModules));
     }
-  }, [isOpen, customers]); // Intentionally omitting enabledModules and activeType to prevent unnecessary resets
+    prevIsOpen.current = isOpen;
+  }, [isOpen, customers, enabledModules]);
 
   // If modal is not open, all hooks have executed; return null now safely
   if (!isOpen) return null;
@@ -216,6 +218,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800"
           >
             <X className="w-5 h-5" />

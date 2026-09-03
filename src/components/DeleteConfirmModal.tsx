@@ -5,6 +5,7 @@ interface DeleteConfirmModalProps {
   isOpen: boolean;
   title: string;
   message: string;
+  confirmLabel?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -13,6 +14,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   isOpen,
   title,
   message,
+  confirmLabel = 'Delete',
   onConfirm,
   onCancel,
 }) => {
@@ -40,7 +42,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             className="flex-1 py-2.5 text-xs font-black uppercase tracking-wider text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition shadow-md shadow-rose-600/20 flex items-center justify-center gap-1.5"
           >
             <Trash2 className="w-4 h-4" />
-            <span>Delete</span>
+            <span>{confirmLabel}</span>
           </button>
         </div>
       </div>
