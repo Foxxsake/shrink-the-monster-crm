@@ -50,6 +50,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const [jobTitle, setJobTitle] = useState('');
   const [jobCustId, setJobCustId] = useState(customers[0]?.id || '');
   const [jobDate, setJobDate] = useState(new Date().toISOString().split('T')[0]);
+  const [jobStartTime, setJobStartTime] = useState('09:00');
+  const [jobStatus, setJobStatus] = useState<Job['status']>('scheduled');
   const [jobAmount, setJobAmount] = useState<string>('150');
 
   // Task Form
@@ -99,6 +101,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       setJobTitle('');
       setJobAmount('150');
       setJobDate(new Date().toISOString().split('T')[0]);
+      setJobStartTime('09:00');
+      setJobStatus('scheduled');
 
       setTaskTitle('');
       setTaskPriority('medium');
@@ -119,11 +123,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       setFolCustId(firstCustId);
       setPayCustId(firstCustId);
 
-      if (!enabledModules.some((m) => m.id === activeType) && enabledModules[0]) {
-        setActiveType(enabledModules[0].id);
-      }
+      // Do not use enabledModules as dependency here to prevent reset on every config change while open
     }
-  }, [isOpen, customers, enabledModules, activeType]);
+  }, [isOpen, customers]); // Intentionally omitting enabledModules and activeType to prevent unnecessary resets
 
   // If modal is not open, all hooks have executed; return null now safely
   if (!isOpen) return null;
@@ -152,8 +154,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
         id: `job-${Date.now()}`,
         title: jobTitle.trim(),
         customerId: jobCustId,
-        status: 'scheduled',
+        status: jobStatus,
         date: jobDate,
+        startTime: jobStartTime,
         amount: parseFloat(jobAmount) || 0,
       });
     } else if (activeType === 'tasks') {
@@ -356,6 +359,45 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                        Status
+                      </label>
+                      <select
+                        value={jobStatus}
+                        onChange={(e) => setJobStatus(e.target.value as any)}
+                        className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                      >
+                        <option value="scheduled">Scheduled</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                        Date
+                      </label>
+                      <input
+                        type="date"
+                        value={jobDate}
+                        onChange={(e) => setJobDate(e.target.value)}
+                        className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
+                        Time
+                      </label>
+                      <input
+                        type="time"
+                        value={jobStartTime}
+                        onChange={(e) => setJobStartTime(e.target.value)}
+                        className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
                         Amount (£)
                       </label>
                       <input
@@ -366,17 +408,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                         className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
                       />
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">
-                      Date scheduled
-                    </label>
-                    <input
-                      type="date"
-                      value={jobDate}
-                      onChange={(e) => setJobDate(e.target.value)}
-                      className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                    />
                   </div>
                 </>
               )}

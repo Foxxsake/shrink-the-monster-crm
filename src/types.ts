@@ -12,7 +12,7 @@ export interface ModuleConfig {
 export interface WorkspaceConfig {
   businessName: string;
   businessType: string;
-  replaceSoftware: string;
+  replaceSoftware: string | string[];
   accentColor: string; // hex color e.g., '#4f46e5'
   modules: ModuleConfig[];
   isConfigured: boolean;
@@ -35,9 +35,16 @@ export interface Job {
   id: string;
   title: string;
   customerId: string;
+  jobType?: string;
+  description?: string;
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
   date: string; // YYYY-MM-DD
+  startTime?: string;
+  estimatedDuration?: string;
+  address?: string;
+  assignedPerson?: string;
   amount?: number;
+  recurrence?: 'one-off' | 'weekly' | 'fortnightly' | 'monthly';
   notes?: string;
 }
 

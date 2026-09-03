@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Customer, Job, WorkspaceConfig } from '../../types';
 import { DeleteConfirmModal } from '../DeleteConfirmModal';
+import { sortJobsByDate } from '../../utils/jobs';
 
 interface JobsViewProps {
   config: WorkspaceConfig;
@@ -45,31 +46,47 @@ export const JobsView: React.FC<JobsViewProps> = ({
   const [formData, setFormData] = useState({
     title: '',
     customerId: customers[0]?.id || '',
+    jobType: '',
+    description: '',
     status: 'scheduled' as Job['status'],
     date: new Date().toISOString().split('T')[0],
+    startTime: '09:00',
+    estimatedDuration: '2 hours',
+    address: '',
+    assignedPerson: '',
     amount: '150',
+    recurrence: 'one-off' as Job['recurrence'],
     notes: '',
   });
 
-  const filteredJobs = jobs.filter((job) => {
-    const cust = customers.find((c) => c.id === job.customerId);
-    const matchesSearch =
-      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (cust && cust.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredJobs = sortJobsByDate(
+    jobs.filter((job) => {
+      const cust = customers.find((c) => c.id === job.customerId);
+      const matchesSearch =
+        job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (cust && cust.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
+      const matchesStatus = statusFilter === 'all' || job.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
-  });
+      return matchesSearch && matchesStatus;
+    })
+  );
 
   const handleOpenAdd = () => {
     setEditingJob(null);
     setFormData({
       title: '',
       customerId: customers[0]?.id || '',
+      jobType: '',
+      description: '',
       status: 'scheduled',
       date: new Date().toISOString().split('T')[0],
+      startTime: '09:00',
+      estimatedDuration: '2 hours',
+      address: '',
+      assignedPerson: '',
       amount: '150',
+      recurrence: 'one-off',
       notes: '',
     });
     setIsModalOpen(true);
@@ -80,9 +97,16 @@ export const JobsView: React.FC<JobsViewProps> = ({
     setFormData({
       title: job.title,
       customerId: job.customerId,
+      jobType: job.jobType || '',
+      description: job.description || '',
       status: job.status,
       date: job.date,
+      startTime: job.startTime || '',
+      estimatedDuration: job.estimatedDuration || '',
+      address: job.address || '',
+      assignedPerson: job.assignedPerson || '',
       amount: (job.amount || 0).toString(),
+      recurrence: job.recurrence || 'one-off',
       notes: job.notes || '',
     });
     setIsModalOpen(true);
@@ -97,9 +121,16 @@ export const JobsView: React.FC<JobsViewProps> = ({
         ...editingJob,
         title: formData.title.trim(),
         customerId: formData.customerId,
+        jobType: formData.jobType.trim(),
+        description: formData.description.trim(),
         status: formData.status,
         date: formData.date,
+        startTime: formData.startTime.trim(),
+        estimatedDuration: formData.estimatedDuration.trim(),
+        address: formData.address.trim(),
+        assignedPerson: formData.assignedPerson.trim(),
         amount: parseFloat(formData.amount) || 0,
+        recurrence: formData.recurrence,
         notes: formData.notes.trim(),
       });
     } else {
@@ -107,13 +138,19 @@ export const JobsView: React.FC<JobsViewProps> = ({
         id: `job-${Date.now()}`,
         title: formData.title.trim(),
         customerId: formData.customerId,
+        jobType: formData.jobType.trim(),
+        description: formData.description.trim(),
         status: formData.status,
         date: formData.date,
+        startTime: formData.startTime.trim(),
+        estimatedDuration: formData.estimatedDuration.trim(),
+        address: formData.address.trim(),
+        assignedPerson: formData.assignedPerson.trim(),
         amount: parseFloat(formData.amount) || 0,
+        recurrence: formData.recurrence,
         notes: formData.notes.trim(),
       });
     }
-
     setIsModalOpen(false);
   };
 
@@ -204,16 +241,63 @@ export const JobsView: React.FC<JobsViewProps> = ({
                     </button>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-neutral-400">
-                    <span className="flex items-center gap-1 font-bold text-neutral-200">
-                      <User className="w-3.5 h-3.5 text-neutral-500" />
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-neutral-400 mt-2">
+                    <span className="flex items-center gap-1.5 font-bold text-neutral-200 bg-neutral-900 px-2 py-1 rounded-md border border-neutral-800">
+                      <User className="w-3 h-3 text-neutral-500" />
                       <span>{cust?.name || 'Client'}</span>
                     </span>
+                    
+                    {job.jobType && (
+                      <span className="flex items-center gap-1">
+                        <Briefcase className="w-3 h-3 text-neutral-500" />
+                        <span>{job.jobType}</span>
+                      </span>
+                    )}
+
                     <span className="flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-neutral-500" />
+                      <Calendar className="w-3 h-3 text-neutral-500" />
                       <span>{job.date}</span>
                     </span>
+
+                    {job.startTime && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-neutral-500" />
+                        <span>{job.startTime}</span>
+                      </span>
+                    )}
+                    
+                    {job.estimatedDuration && (
+                      <span className="text-neutral-500">
+                        ({job.estimatedDuration})
+                      </span>
+                    )}
+                    
+                    {job.address && (
+                      <span className="flex items-center gap-1">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-500">@</span>
+                        <span className="truncate max-w-[120px]">{job.address}</span>
+                      </span>
+                    )}
+
+                    {job.assignedPerson && (
+                      <span className="flex items-center gap-1">
+                        <span className="text-[10px] uppercase font-bold tracking-wider text-neutral-500">To:</span>
+                        <span>{job.assignedPerson}</span>
+                      </span>
+                    )}
+
+                    {job.recurrence && job.recurrence !== 'one-off' && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#00FF9D]">
+                        ↻ {job.recurrence}
+                      </span>
+                    )}
                   </div>
+
+                  {job.description && (
+                    <p className="text-xs text-neutral-300 mt-2">
+                      {job.description}
+                    </p>
+                  )}
 
                   {job.notes && (
                     <p className="text-xs text-neutral-300 mt-2 bg-neutral-900 p-2.5 rounded-xl border border-neutral-800 font-medium">
@@ -264,7 +348,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5 space-y-3.5">
+            <form onSubmit={handleSubmit} className="p-5 space-y-3.5 max-h-[70vh] overflow-y-auto">
               <div>
                 <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Title *</label>
                 <input
@@ -277,19 +361,42 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Client *</label>
+                  <select
+                    value={formData.customerId}
+                    onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                  >
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Job Type / Category</label>
+                  <input
+                    type="text"
+                    value={formData.jobType}
+                    onChange={(e) => setFormData({ ...formData, jobType: e.target.value })}
+                    placeholder="e.g. Lawn Mowing"
+                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                  />
+                </div>
+              </div>
+              
               <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Client *</label>
-                <select
-                  value={formData.customerId}
-                  onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
-                >
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Description</label>
+                <textarea
+                  rows={2}
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Brief description of the work"
+                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -317,14 +424,72 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 </div>
               </div>
 
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Time</label>
+                  <input
+                    type="time"
+                    value={formData.startTime}
+                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Duration</label>
+                  <input
+                    type="text"
+                    value={formData.estimatedDuration}
+                    onChange={(e) => setFormData({ ...formData, estimatedDuration: e.target.value })}
+                    placeholder="e.g. 2 hrs"
+                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                  />
+                </div>
+              </div>
+              
               <div>
-                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Scheduled Date</label>
+                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Address / Location</label>
                 <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="e.g. 123 High St"
+                  className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Assigned To</label>
+                  <input
+                    type="text"
+                    value={formData.assignedPerson}
+                    onChange={(e) => setFormData({ ...formData, assignedPerson: e.target.value })}
+                    placeholder="e.g. Sarah"
+                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wider mb-1">Recurrence</label>
+                  <select
+                    value={formData.recurrence}
+                    onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as any })}
+                    className="w-full rounded-xl bg-neutral-900 border border-neutral-700 px-3.5 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#FF5722]"
+                  >
+                    <option value="one-off">One-off</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="fortnightly">Fortnightly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -337,7 +502,7 @@ export const JobsView: React.FC<JobsViewProps> = ({
                 />
               </div>
 
-              <div className="pt-2 flex gap-2">
+              <div className="pt-2 flex gap-2 border-t border-neutral-800 mt-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
